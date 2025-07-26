@@ -7,27 +7,27 @@ This project builds an end-to-end AI-powered solution to score sales leads based
 ## 📁 Project Structure
 
 CRM_Leading_Score/
-│
 ├── data/
-│ ├── sales_pipeline.csv
-│ ├── agent_info.csv
-│ └── scored_leads.csv # Final predictions
+│   ├── sales_pipeline.csv         # Raw opportunity data
+│   ├── agent_info.csv             # Sales agent metadata
+│   └── scored_leads.csv           # Final scored leads
 │
 ├── scripts/
-│ ├── data_merge.py # Merges raw datasets
-│ ├── preprocessing.py # Feature engineering
-│ └── modeling.py # ML training & evaluation
+│   ├── data_merge.py              # Merges and aligns raw datasets
+│   ├── preprocessing.py           # Feature engineering and encoding
+│   └── modeling.py                # ML model training & evaluation
 │
 ├── dashboard/
-│ ├── app.py # Streamlit app
-│ └── scored_leads.csv # Used in dashboard
+│   ├── app.py                     # Streamlit dashboard code
+│   └── scored_leads.csv           # Input for dashboard (can be symlinked)
 │
 ├── outputs/
-│ ├── metrics.txt # RMSE & R² results
-│ └── model_predictions.csv
+│   ├── metrics.txt                # RMSE and R² scores
+│   └── model_predictions.csv      # Model output scores
 │
-├── main.py # Pipeline runner script
-└── README.md # You're reading it!
+├── main.py                        # Pipeline runner script
+└── README.md                      # Project documentation (this file)
+
 
 
 
