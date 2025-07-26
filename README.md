@@ -7,14 +7,14 @@ This project builds an end-to-end AI-powered solution to score sales leads based
 ```
 CRM_Lead_Score_AI/
 ├── data/
-│ ├── sales_pipeline.csv # Raw sales pipeline data
-│ ├── agent_info.csv # Agent metadata
+│ ├── sales_pipeline.csv 
+│ ├── agent_info.csv 
 │ └── scored_leads.csv # Final lead scores
 │
 ├── scripts/
-│ ├── data_merge.py # Script to merge raw datasets
-│ ├── preprocessing.py # Feature engineering and cleaning
-│ └── modeling.py # ML model training and evaluation
+│ ├── data_merge.py 
+│ ├── preprocessing.py 
+│ └── modeling.py 
 │
 ├── dashboard/
 │ ├── app.py # Streamlit web app
