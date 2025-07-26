@@ -64,3 +64,17 @@ Run the interactive dashboard locally:
 ```bash
 pip install streamlit pandas
 streamlit run dashboard/app.py
+```
+
+### 📊 Power BI Dashboard
+
+To enhance interpretability and provide visual insights into lead scoring patterns, a **Power BI dashboard** was created based on the final output (`scored_leads.csv`).
+
+#### ✅ Features:
+- 📈 **Overall KPIs**: Total leads, average conversion score
+- 📊 **Lead Conversion Distribution**: Segmented by region, agent, and campaign
+- 📍 **Geographic Performance** (if applicable): Regional lead heatmap
+- 🔎 **Interactive Filters**: Drill-down by agent name, lead source, and score range
+
+#### 🗂️ Location:
+The `.pbix` file is stored under the `dashboard/` folder:
