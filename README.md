@@ -2,6 +2,15 @@
 
 This project builds an end-to-end AI-powered solution to score sales leads based on CRM data. It leverages machine learning models to predict lead conversion potential and presents the results through a Streamlit dashboard and Power BI visualizations.
 
+### 📁 Dataset
+
+This project uses the **Bank Marketing Dataset** sourced from Kaggle:  
+🔗 [Bank Marketing Dataset on Kaggle](https://www.kaggle.com/datasets/janiobachmann/bank-marketing-dataset)
+
+Due to Kaggle’s redistribution policy, the dataset is **not included** in this repository.
+
+
+
 
 ## 📂 **Repository Structure**
 ```
