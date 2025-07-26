@@ -1,0 +1,10 @@
+
+Model: Linear Regression
+                 0
+RMSE  9.625841e-14
+R^2   1.000000e+00
+
+Model: Random Forest
+        0
+RMSE  0.0
+R^2   1.0
