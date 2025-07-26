@@ -2,9 +2,9 @@
 
 This project builds an end-to-end AI-powered solution to score sales leads based on CRM data. It leverages machine learning models to predict lead conversion potential and presents the results through a Streamlit dashboard and Power BI visualizations.
 
----
 
-## 📂 Project Structure
+## 📂 **Repository Structure**
+```
 CRM_Lead_Score_AI/
 ├── data/
 │ ├── sales_pipeline.csv # Raw sales pipeline data
@@ -26,11 +26,8 @@ CRM_Lead_Score_AI/
 │
 ├── main.py # Pipeline runner script
 └── README.md # Project documentation
+```
 
-
-
-
----
 
 ## ⚙️ How It Works
 
