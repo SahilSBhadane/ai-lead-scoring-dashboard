@@ -59,6 +59,9 @@ CRM_Lead_Score_AI/
 
 ## 📈 Streamlit Dashboard
 
+### 🚀 Live Demo  
+Access the deployed Streamlit app here: [AI Lead Scoring Dashboard](https://ai-lead-scoring-dashboard.streamlit.app/)
+
 Run the interactive dashboard locally:
 
 ```bash
