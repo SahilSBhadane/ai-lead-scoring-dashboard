@@ -1,21 +1,24 @@
 import pandas as pd
 
-def load_and_merge_data():
-    print("🔄 Loading and merging data...")
 
-    pipeline = pd.read_csv("data/sales_pipeline.csv")
-    accounts = pd.read_csv("data/accounts.csv")
-    products = pd.read_csv("data/products.csv")
-    teams = pd.read_csv("data/sales_teams.csv")
+def load_and_merge_data(data_dir="data"):
+    """Load the 4 CRM tables and join them onto the sales pipeline."""
+    pipeline = pd.read_csv(f"{data_dir}/sales_pipeline.csv")
+    accounts = pd.read_csv(f"{data_dir}/accounts.csv")
+    products = pd.read_csv(f"{data_dir}/products.csv")
+    teams = pd.read_csv(f"{data_dir}/sales_teams.csv")
 
-    # Fixing typos in column names
-    accounts.rename(columns={'yeear_established': 'year_established'}, inplace=True)
-    products.rename(columns={'saales_price': 'sales_price'}, inplace=True)
-    teams.rename(columns={"manager'": "manager"}, inplace=True)
+    # Fix typos in the source column names
+    accounts = accounts.rename(columns={"yeear_established": "year_established"})
+    products = products.rename(columns={"saales_price": "sales_price"})
+    teams = teams.rename(columns={"manager'": "manager"})
 
-    # Merge
-    df = pipeline.merge(accounts, on='account', how='left')
-    df = df.merge(products, on='product', how='left')
-    df = df.merge(teams, on='sales_agent', how='left')
+    # Product names differ between tables in the raw data ("GTXPro" vs "GTX Pro")
+    pipeline["product"] = pipeline["product"].replace({"GTXPro": "GTX Pro"})
 
+    df = (
+        pipeline.merge(accounts, on="account", how="left")
+        .merge(products, on="product", how="left")
+        .merge(teams, on="sales_agent", how="left")
+    )
     return df

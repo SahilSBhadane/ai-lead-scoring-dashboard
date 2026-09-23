@@ -1,25 +1,42 @@
 import pandas as pd
-from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 
-def preprocess_data(df):
-    print("⚙️  Preprocessing...")
+TARGET = "won"
 
-    # Drop rows with missing target (you don’t have 'converted', so create a target!)
-    df = df.dropna(subset=['close_value'])  # Using 'close_value' as proxy target
-    # Drop rows with missing values (quick fix)
-    df = df.dropna()
+# Columns that are only known AFTER a deal closes (or are the label itself).
+# Keeping any of these in the features leaks the answer into the model.
+LEAKY_COLS = ["deal_stage", "close_date", "close_value"]
 
-    # Target variable: assume deal is won if close_value > 0
-    df['converted'] = df['close_value'].apply(lambda x: 1 if x > 0 else 0)
+# Identifiers - unique per row, no predictive meaning
+ID_COLS = ["opportunity_id", "account"]
 
-    # Drop unnecessary columns
-    df = df.drop(['opportunity_id', 'account', 'engage_date', 'close_date', 'close_value'], axis=1)
+CATEGORICAL = [
+    "sales_agent", "product", "series", "sector", "office_location",
+    "subsidiary_of", "manager", "regional_office",
+]
+NUMERIC = [
+    "sales_price", "revenue", "employees", "year_established",
+    "engage_month", "engage_dayofweek",
+]
+FEATURES = CATEGORICAL + NUMERIC
 
-    # Separate features and target
-    X = df.drop('converted', axis=1)
-    y = df['converted']
 
-    # One-hot encode categorical variables
-    X_encoded = pd.get_dummies(X, drop_first=True)
+def add_features(df):
+    df = df.copy()
+    engage = pd.to_datetime(df["engage_date"], errors="coerce")
+    df["engage_month"] = engage.dt.month
+    df["engage_dayofweek"] = engage.dt.dayofweek
+    for col in CATEGORICAL:
+        df[col] = df[col].fillna("Unknown").astype(str)
+    return df
 
-    return X_encoded, y, None  # no label encoder used
+
+def split_closed_and_open(df):
+    """
+    Closed deals (Won/Lost) have a known outcome -> used to train and evaluate.
+    Open deals (Engaging/Prospecting) have no outcome yet -> these are what we score.
+    """
+    df = add_features(df)
+    closed = df[df["deal_stage"].isin(["Won", "Lost"])].copy()
+    closed[TARGET] = (closed["deal_stage"] == "Won").astype(int)
+    open_deals = df[df["deal_stage"].isin(["Engaging", "Prospecting"])].copy()
+    return closed, open_deals
