@@ -1,277 +1,57 @@
-# 📊 AI-Powered CRM Lead Scoring Platform
+# CRM Lead Scoring
 
-### Data-Driven Sales Optimization with Machine Learning
+Predicts the **win probability of open sales deals** from CRM pipeline data and ranks them in a Streamlit dashboard, so a sales team knows which deals to work first.
 
-[![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)]()
-[![scikit-learn](https://img.shields.io/badge/scikit--learn-F7931E?style=flat&logo=scikit-learn&logoColor=white)]()
-[![XGBoost](https://img.shields.io/badge/XGBoost-337AB7?style=flat&logo=xgboost&logoColor=white)]()
-[![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat&logo=streamlit&logoColor=white)]()
-[![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)]()
+**Stack:** Python · pandas · scikit-learn · XGBoost · Streamlit
 
----
+## How it works
 
-## 🎯 The Problem
-
-Sales teams face a critical challenge:
-- **30%+ of pipeline value lost** due to misallocated effort on low-intent prospects
-- **20+ hours monthly** wasted on manual lead qualification
-- **No data-driven insights** for territory and agent performance
-- **Inefficient resource allocation** across sales teams
-
-## 💡 The Solution
-
-An ML-powered lead scoring system that **automatically prioritizes high-conversion opportunities**, saving time and maximizing revenue potential through intelligent data analysis.
-
-### Key Features
-
-✅ **Predictive Lead Scoring** – 1.00 R² accuracy using Random Forest  
-✅ **Automated Data Processing** – Eliminates 20+ hours of monthly manual work  
-✅ **Interactive Dashboard** – Streamlit + Power BI visualizations  
-✅ **Territory Analytics** – Regional performance heatmaps  
-✅ **Agent Performance Tracking** – Data-driven sales insights  
-✅ **Plug-and-Play Integration** – RESTful API for existing CRM systems  
-
----
-
-## 🚀 Tech Stack
-
-- **ML Framework:** Scikit-Learn, XGBoost
-- **Backend:** Python, Flask API
-- **Visualization:** Streamlit, Power BI
-- **Data Processing:** Pandas, NumPy
-- **Deployment:** Docker
-- **Database:** PostgreSQL/MySQL compatible
-
----
-
-## 📊 Impact
-
-- 🎯 **1.00 R²** – Near-perfect lead conversion prediction
-- ⏱️ **20+ hours saved** monthly on manual qualification
-- 💰 **30% pipeline value** recovered through better prioritization
-- 📈 **Real-time insights** for sales managers
-- 🚀 **Instant scoring** for new leads
-
----
-
-## 🏗️ Architecture
 ```
-┌─────────────┐
-│  CRM Data   │ → Lead information, agent data, historical conversions
-└──────┬──────┘
-       │
-       ↓
-┌──────────────────────┐
-│  Data Preprocessing  │ → Automated cleaning & feature engineering
-└──────┬───────────────┘
-       │
-       ↓
-┌──────────────────────┐
-│  ML Pipeline         │ → Random Forest model (R² = 1.00)
-│  - Feature scaling   │
-│  - Agent integration │
-│  - Real-time scoring │
-└──────┬───────────────┘
-       │
-       ↓
-┌──────────────────────────────┐
-│  Visualization Dashboard     │
-│  - Lead priority scores      │
-│  - Territory heatmaps        │
-│  - Agent performance metrics │
-└──────────────────────────────┘
+sales_pipeline + accounts + products + sales_teams
+        │  join (scripts/data_merge.py)
+        ▼
+closed deals (Won / Lost) ──► train + evaluate ──► best model by CV ROC-AUC
+open deals (Engaging / Prospecting) ─────────────► score ──► outputs/scored_leads.csv ──► dashboard
 ```
 
----
+1. **Join** the four CRM tables onto the sales pipeline (and fix the typos / product-name mismatches in the raw files).
+2. **Label** only closed deals: `won = 1` if Won, `0` if Lost. Open deals have no outcome yet, so they are what gets scored.
+3. **Features** are limited to what's known *before* a deal closes: agent, manager, region, product, series, price, account sector / size / age, engage month and weekday.
+4. **Models:** majority-class baseline vs Logistic Regression vs XGBoost, in scikit-learn pipelines (one-hot encoding + imputation), 5-fold stratified CV on ROC-AUC, plus a held-out test set.
+5. The best model is refit on all closed deals and used to score the open pipeline into High / Medium / Low priority.
 
-## 💻 Installation & Setup
+## Avoiding target leakage
 
-### Prerequisites
-- Python 3.8+
-- Docker (optional)
-- pip package manager
+An earlier version of this project reported R² = 1.00. That score was a bug: `close_value` (used to build the label) and `deal_stage` (which *is* the label) were still in the features, so the model was handed the answer. This version:
 
-### Quick Start
+- drops `deal_stage`, `close_date` and `close_value` from the features
+- treats it as **classification** (win / lose), not regression
+- evaluates with ROC-AUC and PR-AUC against a baseline instead of R²
 
-1. **Clone the repository**
-```bash
-git clone https://github.com/SahilSBhadane/CRM-Lead-Scoring.git
-cd CRM-Lead-Scoring
-```
+## Results
 
-2. **Install dependencies**
+Run `python main.py`. Metrics are written to `outputs/metrics_report.txt`.
+
+<!-- Paste the metrics table from outputs/metrics_report.txt here after running -->
+
+Honest note: pre-close CRM fields carry limited signal about whether a deal is won, so expect a modest ROC-AUC. The point of this project is a correct, leak-free pipeline, not a headline number.
+
+## Run it
+
+Dataset: Maven Analytics **CRM + Sales + Opportunities** (free). Put `sales_pipeline.csv`, `accounts.csv`, `products.csv` and `sales_teams.csv` in `data/`.
+
 ```bash
 pip install -r requirements.txt
+python main.py                      # train, evaluate, score open deals
+streamlit run dashboard/app.py      # dashboard
 ```
 
-3. **Configure database (optional)**
-```python
-# config.py
-DATABASE_URL = "postgresql://user:pass@localhost/crm_db"
+## Structure
+
 ```
-
-4. **Train the model**
-```bash
-python train_model.py
+main.py                 # end-to-end run
+scripts/data_merge.py   # load + join tables
+scripts/preprocessing.py# labels, features, leak-prone columns
+scripts/modeling.py     # baseline / Logistic Regression / XGBoost + evaluation
+dashboard/app.py        # Streamlit dashboard
 ```
-
-5. **Launch dashboard**
-```bash
-streamlit run dashboard.py
-```
-
-6. **Access the platform**
-```
-http://localhost:8501
-```
-
-### Docker Deployment
-```bash
-docker build -t crm-lead-scoring .
-docker run -p 8501:8501 crm-lead-scoring
-```
-
----
-
-## 📈 Features
-
-### 🎯 Lead Scoring Engine
-- Predicts conversion probability for each lead
-- Accounts for lead source, engagement, demographics
-- Integrates agent performance data
-- Real-time scoring for new leads
-
-### 📊 Interactive Dashboard
-- **Priority List** – Sorted by conversion probability
-- **Territory Heatmaps** – Geographic performance insights
-- **Agent Analytics** – Individual performance metrics
-- **Trend Analysis** – Historical conversion patterns
-
-### 🔌 API Integration
-```python
-# Score a single lead
-POST /api/score
-{
-  "lead_source": "website",
-  "engagement_score": 75,
-  "company_size": 500,
-  "industry": "tech",
-  "agent_id": "A123"
-}
-
-# Response
-{
-  "lead_score": 0.87,
-  "priority": "high",
-  "recommended_action": "immediate_follow_up"
-}
-```
-
----
-
-## 🎮 Usage
-
-### For Sales Managers
-1. Upload your CRM data (CSV format)
-2. View prioritized lead list
-3. Analyze territory performance
-4. Track agent effectiveness
-5. Export insights to Power BI
-
-### For Sales Reps
-1. Access your assigned lead scores
-2. Focus on high-probability prospects
-3. View recommended actions
-4. Track your conversion metrics
-
-### For Data Teams
-1. Integrate via REST API
-2. Customize scoring models
-3. Add new features
-4. Monitor model performance
-
----
-
-## 📊 Model Performance
-
-| Metric | Score |
-|--------|-------|
-| R² Score | 1.00 |
-| MAE | 0.02 |
-| RMSE | 0.03 |
-| Training Time | < 5 min |
-
-**Features Used:**
-- Lead source
-- Engagement metrics
-- Company demographics
-- Historical conversion data
-- Agent performance scores
-- Geographic indicators
-
----
-
-## 🎯 Use Cases
-
-1. **B2B Sales Teams** – Prioritize enterprise leads
-2. **Real Estate Agencies** – Score property inquiries
-3. **SaaS Companies** – Optimize trial-to-paid conversions
-4. **Insurance Firms** – Identify high-value prospects
-5. **Recruitment Agencies** – Score candidate-job matches
-
----
-
-## 🗺️ Roadmap
-
-- [ ] Deep learning model experimentation
-- [ ] A/B testing framework
-- [ ] Email integration for auto-outreach
-- [ ] Mobile app for sales reps
-- [ ] Advanced NLP for lead communication analysis
-- [ ] Integration with Salesforce, HubSpot, Pipedrive
-- [ ] Automated retraining pipeline
-
----
-
-## 🤝 Contributing
-
-Contributions welcome! Help improve sales efficiency across industries.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/ModelImprovement`)
-3. Commit your changes (`git commit -m 'Add LSTM model'`)
-4. Push to the branch (`git push origin feature/ModelImprovement`)
-5. Open a Pull Request
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 👨‍💻 Author
-
-**Sahil Bhadane**  
-- GitHub: [@SahilSBhadane](https://github.com/SahilSBhadane)
-- LinkedIn: [linkedin.com/in/sahil-bhadane](https://www.linkedin.com/in/sahil-bhadane)
-- Email: sahilbhadane04@gmail.com
-
----
-
-## 🙏 Acknowledgments
-
-- Built to solve the $B sales optimization problem
-- Focused on actionable insights over vanity metrics
-- Designed for non-technical sales teams
-
----
-
-<div align="center">
-
-### ⚡ "Stop guessing. Start scoring."
-
-Made with 📊 for data-driven sales teams
-
-</div>

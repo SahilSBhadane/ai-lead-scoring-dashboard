@@ -1,42 +1,52 @@
-from scripts.data_merge import load_and_merge_data
-from scripts.preprocessing import preprocess_data
-from scripts.modeling import train_and_evaluate
-from sklearn.model_selection import train_test_split
-import pandas as pd
 import os
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
+from scripts.data_merge import load_and_merge_data
+from scripts.modeling import train_and_evaluate
+from scripts.preprocessing import FEATURES, TARGET, split_closed_and_open
+
+
+def tier(p):
+    return "High" if p >= 0.7 else "Medium" if p >= 0.4 else "Low"
 
 
 def main():
-    print("🔄 Loading and merging data...")
+    os.makedirs("outputs", exist_ok=True)
     df = load_and_merge_data()
+    closed, open_deals = split_closed_and_open(df)
+    print(f"Closed deals: {len(closed)} (win rate {closed[TARGET].mean():.1%}) | "
+          f"open deals to score: {len(open_deals)}")
 
-    print("⚙️  Preprocessing...")
-    X, y, _ = preprocess_data(df)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        closed[FEATURES], closed[TARGET], test_size=0.2,
+        stratify=closed[TARGET], random_state=42,
+    )
+    best_name, results = train_and_evaluate(X_train, X_test, y_train, y_test)
 
-    print("🤖 Training models...")
-    best_model, reports = train_and_evaluate(X_train, X_test, y_train, y_test)
-
-    print("✅ Saving model predictions...")
-    preds = best_model.predict(X_test)
-
-    result_df = X_test.copy()
-    result_df['conversion_score'] = preds
-    result_df['opportunity_level'] = pd.cut(preds, bins=[0, 0.4, 0.7, 1.0], labels=['Low', 'Medium', 'High'])
-    result_df.to_csv("outputs/scored_leads.csv", index=False)
-
-    print("📝 Writing metrics report...")
+    # Metrics report
+    rows = [{"model": n, **{k: round(v, 4) for k, v in r.items() if k != "model"}}
+            for n, r in results.items()]
+    report = pd.DataFrame(rows)
+    report.to_csv("outputs/metrics_report.csv", index=False)
     with open("outputs/metrics_report.txt", "w") as f:
-        for model_name, report in reports.items():
-            # Remove model object before writing to file
-            clean_report = {k: v for k, v in report.items() if k != 'model'}
-            f.write(f"\nModel: {model_name}\n")
-            f.write(pd.DataFrame(clean_report, index=[0]).transpose().to_string())
-            f.write("\n")
+        f.write(f"Closed deals: {len(closed)} | win rate: {closed[TARGET].mean():.3f}\n")
+        f.write(f"Selected model (best CV ROC-AUC): {best_name}\n\n")
+        f.write(report.to_string(index=False))
 
-    print("🚀 Done! Check the outputs folder.")
+    # Refit the chosen model on all closed deals, then score the OPEN pipeline
+    model = results[best_name]["model"]
+    model.fit(closed[FEATURES], closed[TARGET])
+    open_deals["conversion_probability"] = model.predict_proba(open_deals[FEATURES])[:, 1].round(4)
+    open_deals["priority"] = open_deals["conversion_probability"].apply(tier)
+    cols = ["opportunity_id", "sales_agent", "manager", "regional_office", "product",
+            "account", "deal_stage", "conversion_probability", "priority"]
+    scored = open_deals[cols].sort_values("conversion_probability", ascending=False)
+    scored.to_csv("outputs/scored_leads.csv", index=False)
+    scored.to_csv("dashboard/scored_leads.csv", index=False)
+    print(f"Best model: {best_name}. Scored {len(scored)} open deals -> outputs/scored_leads.csv")
 
 
 if __name__ == "__main__":
-    os.makedirs("outputs", exist_ok=True)
     main()
