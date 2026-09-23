@@ -1,30 +1,35 @@
-import streamlit as st
 import pandas as pd
+import streamlit as st
 
-# Load Data
-st.title("🔍 Lead Conversion Scoring Dashboard")
+st.set_page_config(page_title="Lead Scoring Dashboard", layout="wide")
+st.title("Lead Conversion Scoring - Open Pipeline")
+st.caption("Win probability for open (Engaging / Prospecting) deals, "
+           "from a model trained on closed Won/Lost deals.")
+
 df = pd.read_csv("dashboard/scored_leads.csv")
 
-# Show raw data
-with st.expander("📂 View Raw Data"):
-    st.dataframe(df)
+# Filters
+c1, c2, c3 = st.columns(3)
+region = c1.multiselect("Regional office", sorted(df["regional_office"].dropna().unique()))
+manager = c2.multiselect("Manager", sorted(df["manager"].dropna().unique()))
+priority = c3.multiselect("Priority", ["High", "Medium", "Low"])
+if region:
+    df = df[df["regional_office"].isin(region)]
+if manager:
+    df = df[df["manager"].isin(manager)]
+if priority:
+    df = df[df["priority"].isin(priority)]
 
-# Summary stats
-st.subheader("📈 Overall Stats")
-col1, col2 = st.columns(2)
-col1.metric("Total Leads", len(df))
-col2.metric("Average Conversion Score", f"{df['conversion_score'].mean():.2f}")
+m1, m2, m3 = st.columns(3)
+m1.metric("Open deals", len(df))
+m2.metric("Avg win probability", f"{df['conversion_probability'].mean():.1%}" if len(df) else "-")
+m3.metric("High-priority deals", int((df["priority"] == "High").sum()))
 
-# Score Distribution
-st.subheader("📊 Lead Conversion Score Distribution")
+st.subheader("Deals by priority")
+st.bar_chart(df["priority"].value_counts().reindex(["High", "Medium", "Low"]).fillna(0))
 
-# Categorize the scores into bins
-bins = [0, 0.4, 0.7, 1.0]
-labels = ['Low', 'Medium', 'High']
-df['score_range'] = pd.cut(df['conversion_score'], bins=bins, labels=labels)
+st.subheader("Average win probability by sales agent")
+st.bar_chart(df.groupby("sales_agent")["conversion_probability"].mean().sort_values(ascending=False))
 
-# Count how many leads fall into each range
-score_counts = df['score_range'].value_counts().sort_index()
-
-# Display bar chart
-st.bar_chart(score_counts)
+st.subheader("Top deals to work first")
+st.dataframe(df.head(50), use_container_width=True)
